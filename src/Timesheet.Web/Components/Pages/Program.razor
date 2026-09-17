@@ -1,0 +1,24 @@
+@page "/program"
+@attribute [Authorize(Roles = "ProgramViewer")]
+@inject InMemoryTimesheetStore Store
+
+<div class="page-header">
+    <h3>Program View</h3>
+    <p class="page-subtitle">Read-only visibility across the whole program.</p>
+</div>
+
+<div class="surface-card" style="padding:0;">
+<TelerikGrid Data="@Store.Timesheets" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
+    <GridColumns>
+        <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px" />
+        <GridColumn Field="@nameof(TimesheetWeek.UserId)" Title="User" />
+        <GridColumn Field="@nameof(TimesheetWeek.WeekStarting)" Title="Week" Width="130px" />
+        <GridColumn Field="@nameof(TimesheetWeek.Status)" Title="Status" Width="130px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                <span class="badge-soft badge-soft-blue">@ts.Status</span>
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</TelerikGrid>
+</div>

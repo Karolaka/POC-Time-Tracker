@@ -1,0 +1,303 @@
+@page "/my-timesheet"
+@attribute [Authorize(Roles = "TimeEntry")]
+@inject InMemoryTimesheetStore Store
+@inject FakeAuthenticationStateProvider AuthProvider
+
+<TelerikNotification @ref="NotificationRef" />
+
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+        <h3>My Timesheet</h3>
+        <p class="page-subtitle">Track your hours across projects and submit for approval.</p>
+    </div>
+    <div>
+        <label class="form-label mb-1 text-muted" style="font-size:0.8rem;">Week starting (Monday)</label>
+        <TelerikDatePicker @bind-Value="@WeekStart" @bind-Value:after="@LoadWeek" Width="200px" />
+    </div>
+</div>
+
+@if (CurrentTimesheet is not null)
+{
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <span class="kpi-label">Status</span>
+            <span class="badge-soft @GetStatusBadgeClass(CurrentTimesheet.Status)" style="width:fit-content;">@CurrentTimesheet.Status</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">Week total</span>
+            <span class="kpi-value">@WeekTotal.ToString("0.##")<span class="kpi-meta"> / @RequiredWeeklyHours h</span></span>
+            <span class="badge-soft @(WeekTotal == RequiredWeeklyHours ? "badge-soft-success" : "badge-soft-warning")" style="width:fit-content;">
+                @(WeekTotal == RequiredWeeklyHours ? "Complete" : "Incomplete")
+            </span>
+        </div>
+    </div>
+
+    <div class="surface-card mb-4">
+    <div class="table-responsive">
+        <table class="table-minimal timesheet-matrix">
+            <thead>
+                <tr>
+                    <th style="min-width:220px;">Project</th>
+                    <th style="min-width:180px;">Task</th>
+                    @foreach (var day in WeekDays)
+                    {
+                        <th class="text-center" style="width:90px;">@day.ToString("ddd dd/MM")</th>
+                    }
+                    <th class="text-center" style="width:80px;">Total</th>
+                    <th style="width:60px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Rows)
+                {
+                    <tr>
+                        <td>
+                            <TelerikDropDownList Data="@Store.Projects"
+                                                 @bind-Value="@row.ProjectId"
+                                                 @bind-Value:after="@(() => OnRowProjectChanged(row))"
+                                                 TextField="@nameof(Project.Name)"
+                                                 ValueField="@nameof(Project.Id)"
+                                                 DefaultText="Select project..."
+                                                 Width="100%" />
+                        </td>
+                        <td>
+                            <TelerikDropDownList Data="@GetTasksForProject(row.ProjectId)"
+                                                 @bind-Value="@row.TaskId"
+                                                 TextField="@nameof(WorkTask.Name)"
+                                                 ValueField="@nameof(WorkTask.Id)"
+                                                 DefaultText="Select task..."
+                                                 Width="100%" />
+                        </td>
+                        @foreach (var day in WeekDays)
+                        {
+                            var d = DateOnly.FromDateTime(day);
+                            <td class="text-center">
+                                <TelerikNumericTextBox Value="@row.GetHours(d)"
+                                                        ValueChanged="@((decimal v) => { row.SetHours(d, v); RecalculateTotals(); })"
+                                                        Min="0m"
+                                                        Max="24m"
+                                                        Step="0.5m"
+                                                        Format="0.##"
+                                                        Width="80px" />
+                            </td>
+                        }
+                        <td class="text-center"><strong>@row.Total.ToString("0.##")</strong></td>
+                        <td class="text-center">
+                            <TelerikButton OnClick="@(() => RemoveRow(row))" Title="Remove row">Remove</TelerikButton>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2"><strong>Daily total</strong></td>
+                    @foreach (var day in WeekDays)
+                    {
+                        var d = DateOnly.FromDateTime(day);
+                        var dayTotal = Rows.Sum(r => r.GetHours(d));
+                        <td class="text-center"><strong>@dayTotal.ToString("0.##")</strong></td>
+                    }
+                    <td class="text-center"><strong>@WeekTotal.ToString("0.##")</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <TelerikButton OnClick="@AddRow">Add Row</TelerikButton>
+
+        <div class="d-flex gap-2">
+            <TelerikButton OnClick="@SaveDraft">Save Draft</TelerikButton>
+            <TelerikButton OnClick="@SubmitTimesheet" ThemeColor="primary" Enabled="@(WeekTotal == RequiredWeeklyHours)">Submit</TelerikButton>
+        </div>
+    </div>
+
+    @if (WeekTotal != RequiredWeeklyHours)
+    {
+        <div class="surface-card mt-3" style="background-color:#fffaeb;border-color:#fde68a;">
+            <span class="badge-soft badge-soft-warning me-2">Incomplete</span>
+            Week total must equal @RequiredWeeklyHours hours before this timesheet can be submitted. Currently: @WeekTotal.ToString("0.##") h.
+        </div>
+    }
+}
+else
+{
+    <div class="surface-card text-center">
+        <p class="mb-0 text-muted">Please sign in as a user to view your timesheet.</p>
+    </div>
+}
+
+@code {
+    private const decimal RequiredWeeklyHours = 40m;
+
+    private DateTime? WeekStart { get; set; } = StartOfWeek(DateTime.Today);
+    private TimesheetWeek? CurrentTimesheet { get; set; }
+    private TelerikNotification? NotificationRef { get; set; }
+    private List<DateTime> WeekDays { get; set; } = [];
+    private List<TimesheetRow> Rows { get; set; } = [];
+    private decimal WeekTotal => Rows.Sum(r => r.Total);
+
+    protected override void OnInitialized() => LoadWeek();
+
+    private static DateTime StartOfWeek(DateTime date)
+    {
+        var diff = ((int)date.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+        return date.AddDays(-diff).Date;
+    }
+
+    private static string GetStatusBadgeClass(TimesheetStatus status) => status switch
+    {
+        TimesheetStatus.Approved => "badge-soft-success",
+        TimesheetStatus.Rejected => "badge-soft-danger",
+        TimesheetStatus.Submitted or TimesheetStatus.ReadyToSubmit => "badge-soft-blue",
+        _ => "badge-soft-neutral"
+    };
+
+    private List<WorkTask> GetTasksForProject(string? projectId)
+        => projectId is null ? [] : Store.Tasks.Where(t => t.ProjectId == projectId).ToList();
+
+    private void OnRowProjectChanged(TimesheetRow row)
+    {
+        // Reset task when project changes since tasks are project-scoped.
+        row.TaskId = null;
+    }
+
+    private void LoadWeek()
+    {
+        var user = AuthProvider.CurrentUser;
+        if (user is null || WeekStart is null)
+        {
+            CurrentTimesheet = null;
+            return;
+        }
+
+        // Always snap to the Monday of the selected week.
+        WeekStart = StartOfWeek(WeekStart.Value);
+        var weekDate = DateOnly.FromDateTime(WeekStart.Value);
+        WeekDays = Enumerable.Range(0, 7).Select(i => WeekStart.Value.AddDays(i)).ToList();
+
+        CurrentTimesheet = Store.Timesheets.FirstOrDefault(t => t.UserId == user.Id && t.WeekStarting == weekDate);
+
+        if (CurrentTimesheet is null)
+        {
+            CurrentTimesheet = new TimesheetWeek
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserId = user.Id,
+                Organization = user.Organization,
+                WeekStarting = weekDate,
+                Status = TimesheetStatus.Draft
+            };
+            Store.Timesheets.Add(CurrentTimesheet);
+        }
+
+        BuildRowsFromEntries();
+    }
+
+    private void BuildRowsFromEntries()
+    {
+        Rows = CurrentTimesheet!.Entries
+            .Where(e => e.Type == EntryType.Work)
+            .GroupBy(e => (e.ProjectId, e.TaskId))
+            .Select(g =>
+            {
+                var row = new TimesheetRow { ProjectId = g.Key.ProjectId, TaskId = g.Key.TaskId };
+                foreach (var entry in g)
+                {
+                    row.SetHours(entry.Date, entry.Hours);
+                }
+                return row;
+            })
+            .ToList();
+
+        if (Rows.Count == 0)
+        {
+            Rows.Add(new TimesheetRow());
+        }
+    }
+
+    private void AddRow() => Rows.Add(new TimesheetRow());
+
+    private void RemoveRow(TimesheetRow row)
+    {
+        Rows.Remove(row);
+        RecalculateTotals();
+    }
+
+    private void RecalculateTotals() => StateHasChanged();
+
+    /// <summary>Flattens the matrix rows back into TimeEntry records on the underlying timesheet.</summary>
+    private void SyncEntriesFromRows()
+    {
+        CurrentTimesheet!.Entries.RemoveAll(e => e.Type == EntryType.Work);
+
+        foreach (var row in Rows)
+        {
+            if (row.ProjectId is null) continue;
+
+            foreach (var (date, hours) in row.HoursByDate)
+            {
+                if (hours <= 0) continue;
+
+                CurrentTimesheet.Entries.Add(new TimeEntry
+                {
+                    Date = date,
+                    Type = EntryType.Work,
+                    ProjectId = row.ProjectId,
+                    TaskId = row.TaskId,
+                    Hours = hours
+                });
+            }
+        }
+    }
+
+    private void SaveDraft()
+    {
+        SyncEntriesFromRows();
+        CurrentTimesheet!.Status = TimesheetStatus.Draft;
+        NotificationRef?.Show(new NotificationModel
+        {
+            Text = "Draft saved.",
+            ThemeColor = ThemeConstants.Notification.ThemeColor.Success
+        });
+    }
+
+    private void SubmitTimesheet()
+    {
+        if (WeekTotal != RequiredWeeklyHours)
+        {
+            NotificationRef?.Show(new NotificationModel
+            {
+                Text = $"Cannot submit: week total must equal {RequiredWeeklyHours} hours (currently {WeekTotal:0.##}).",
+                ThemeColor = ThemeConstants.Notification.ThemeColor.Error
+            });
+            return;
+        }
+
+        SyncEntriesFromRows();
+        CurrentTimesheet!.Status = TimesheetStatus.ReadyToSubmit;
+        NotificationRef?.Show(new NotificationModel
+        {
+            Text = "Timesheet marked as Ready to Submit.",
+            ThemeColor = ThemeConstants.Notification.ThemeColor.Success
+        });
+    }
+
+    /// <summary>UI-only row model: one project/task line spanning the whole week's day columns.</summary>
+    private class TimesheetRow
+    {
+        public string? ProjectId { get; set; }
+        public string? TaskId { get; set; }
+        public Dictionary<DateOnly, decimal> HoursByDate { get; } = [];
+
+        public decimal Total => HoursByDate.Values.Sum();
+
+        public decimal GetHours(DateOnly date) => HoursByDate.GetValueOrDefault(date);
+
+        public void SetHours(DateOnly date, decimal hours) => HoursByDate[date] = hours;
+    }
+}
+
+

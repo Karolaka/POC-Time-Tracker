@@ -1,0 +1,63 @@
+@page "/approvals"
+@attribute [Authorize(Roles = "Approver")]
+@inject InMemoryTimesheetStore Store
+@inject FakeAuthenticationStateProvider AuthProvider
+
+<div class="page-header">
+    <h3>Approvals</h3>
+    <p class="page-subtitle">Showing timesheets across your approval scope (may span multiple delivery partners).</p>
+</div>
+
+<div class="surface-card" style="padding:0;">
+<TelerikGrid Data="@ApprovableTimesheets" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
+    <GridColumns>
+        <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px" />
+        <GridColumn Field="@nameof(TimesheetWeek.UserId)" Title="User" />
+        <GridColumn Field="@nameof(TimesheetWeek.WeekStarting)" Title="Week" Width="130px" />
+        <GridColumn Field="@nameof(TimesheetWeek.Status)" Title="Status" Width="130px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                <span class="badge-soft badge-soft-blue">@ts.Status</span>
+            </Template>
+        </GridColumn>
+        <GridCommandColumn>
+            <GridCommandButton OnClick="@(() => Approve(context))" ThemeColor="success">Approve</GridCommandButton>
+            <GridCommandButton OnClick="@(() => Reject(context))" ThemeColor="error">Reject</GridCommandButton>
+        </GridCommandColumn>
+    </GridColumns>
+</TelerikGrid>
+</div>
+
+@code {
+    private List<TimesheetWeek> ApprovableTimesheets { get; set; } = [];
+
+    protected override void OnInitialized()
+    {
+        RefreshQueue();
+    }
+
+    private void RefreshQueue()
+    {
+        var approver = AuthProvider.CurrentUser;
+        ApprovableTimesheets = approver is null
+            ? []
+            : Store.GetApprovableTimesheets(approver)
+                .Where(t => t.Status == TimesheetStatus.Submitted)
+                .ToList();
+    }
+
+    private void Approve(object context)
+    {
+        var ts = (TimesheetWeek)context;
+        ts.Status = TimesheetStatus.Approved;
+        ts.ApprovedByUserId = AuthProvider.CurrentUser?.Id;
+        RefreshQueue();
+    }
+
+    private void Reject(object context)
+    {
+        var ts = (TimesheetWeek)context;
+        ts.Status = TimesheetStatus.Rejected;
+        RefreshQueue();
+    }
+}

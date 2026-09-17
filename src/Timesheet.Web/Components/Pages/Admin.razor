@@ -1,0 +1,29 @@
+@page "/admin"
+@attribute [Authorize(Roles = "Administrator")]
+@inject InMemoryTimesheetStore Store
+
+<div class="page-header">
+    <h3>Administration</h3>
+    <p class="page-subtitle">Manage users, projects, tasks and absence codes. (POC shell — mock data only.)</p>
+</div>
+
+<h5 class="mb-3">Users</h5>
+<div class="surface-card mb-5" style="padding:0;">
+<TelerikGrid Data="@Store.Users" Pageable="true">
+    <GridColumns>
+        <GridColumn Field="@nameof(AppUser.DisplayName)" Title="Name" />
+        <GridColumn Field="@nameof(AppUser.Organization)" Title="Organization" />
+        <GridColumn Field="@nameof(AppUser.Roles)" Title="Roles" />
+    </GridColumns>
+</TelerikGrid>
+</div>
+
+<h5 class="mb-3">Projects</h5>
+<div class="surface-card" style="padding:0;">
+<TelerikGrid Data="@Store.Projects" Pageable="true">
+    <GridColumns>
+        <GridColumn Field="@nameof(Project.Name)" Title="Project" />
+        <GridColumn Field="@nameof(Project.ParticipatingOrganizations)" Title="Organizations" />
+    </GridColumns>
+</TelerikGrid>
+</div>

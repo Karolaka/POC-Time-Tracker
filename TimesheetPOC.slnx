@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Timesheet.Application/Timesheet.Application.csproj" />
+    <Project Path="src/Timesheet.Domain/Timesheet.Domain.csproj" />
+    <Project Path="src/Timesheet.Web/Timesheet.Web.csproj" />
+  </Folder>
+</Solution>
