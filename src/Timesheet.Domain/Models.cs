@@ -62,5 +62,10 @@ public class TimesheetWeek
     public TimesheetStatus Status { get; set; } = TimesheetStatus.Draft;
     public List<TimeEntry> Entries { get; init; } = [];
     public string? RejectionReason { get; set; }
+
+    /// <summary>User id of the first-stage (program/org) approver.</summary>
     public string? ApprovedByUserId { get; set; }
+
+    /// <summary>User id of the final/second-stage super-admin approver.</summary>
+    public string? FinalApprovedByUserId { get; set; }
 }

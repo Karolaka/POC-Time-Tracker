@@ -1,28 +1,29 @@
-@page "/approvals"
-@attribute [Authorize(Roles = "Approver")]
+@page "/final-approvals"
+@attribute [Authorize(Roles = "FinalApprover")]
 @implements IDisposable
 @inject InMemoryTimesheetStore Store
 @inject FakeAuthenticationStateProvider AuthProvider
 
 <div class="page-header">
-    <h3>Approvals</h3>
-    <p class="page-subtitle">Showing timesheets across your approval scope (may span multiple delivery partners). Approving here moves a timesheet to first-stage approved, pending final sign-off by a super admin.</p>
+    <h3>Final Approvals</h3>
+    <p class="page-subtitle">Second-stage sign-off across all organizations for timesheets already approved by a first-stage program approver.</p>
 </div>
 
 <div class="surface-card" style="padding:0;">
-<TelerikGrid Data="@ApprovableTimesheets" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
+<TelerikGrid Data="@PendingFinalApproval" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
     <GridColumns>
         <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px" />
         <GridColumn Field="@nameof(TimesheetWeek.UserId)" Title="User" />
         <GridColumn Field="@nameof(TimesheetWeek.WeekStarting)" Title="Week" Width="130px" />
-        <GridColumn Field="@nameof(TimesheetWeek.Status)" Title="Status" Width="130px">
+        <GridColumn Field="@nameof(TimesheetWeek.ApprovedByUserId)" Title="First-Stage Approver" Width="180px" />
+        <GridColumn Field="@nameof(TimesheetWeek.Status)" Title="Status" Width="150px">
             <Template>
                 @{ var ts = (TimesheetWeek)context; }
                 <span class="badge-soft badge-soft-blue">@ts.Status</span>
             </Template>
         </GridColumn>
         <GridCommandColumn>
-            <GridCommandButton OnClick="@(() => Approve(context))" ThemeColor="primary" Class="btn-approve">Approve</GridCommandButton>
+            <GridCommandButton OnClick="@(() => FinalApprove(context))" ThemeColor="primary" Class="btn-approve">Final Approve</GridCommandButton>
             <GridCommandButton OnClick="@(() => Reject(context))" FillMode="flat" Class="btn-reject">Reject</GridCommandButton>
         </GridCommandColumn>
     </GridColumns>
@@ -30,7 +31,7 @@
 </div>
 
 @code {
-    private List<TimesheetWeek> ApprovableTimesheets { get; set; } = [];
+    private List<TimesheetWeek> PendingFinalApproval { get; set; } = [];
 
     protected override void OnInitialized()
     {
@@ -54,19 +55,14 @@
 
     private void RefreshQueue()
     {
-        var approver = AuthProvider.CurrentUser;
-        ApprovableTimesheets = approver is null
-            ? []
-            : Store.GetApprovableTimesheets(approver)
-                .Where(t => t.Status == TimesheetStatus.Submitted)
-                .ToList();
+        PendingFinalApproval = Store.GetFinalApprovableTimesheets().ToList();
     }
 
-    private void Approve(object context)
+    private void FinalApprove(object context)
     {
         var ts = (TimesheetWeek)context;
-        ts.Status = TimesheetStatus.FirstStageApproved;
-        ts.ApprovedByUserId = AuthProvider.CurrentUser?.Id;
+        ts.Status = TimesheetStatus.Approved;
+        ts.FinalApprovedByUserId = AuthProvider.CurrentUser?.Id;
         Store.SaveTimesheets();
         RefreshQueue();
     }

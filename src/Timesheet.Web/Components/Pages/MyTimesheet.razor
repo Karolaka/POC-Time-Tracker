@@ -1,9 +1,24 @@
 @page "/my-timesheet"
 @attribute [Authorize(Roles = "TimeEntry")]
+@implements IDisposable
 @inject InMemoryTimesheetStore Store
 @inject FakeAuthenticationStateProvider AuthProvider
 
-<TelerikNotification @ref="NotificationRef" />
+<TelerikNotification @ref="NotificationRef"
+                     Class="app-notification"
+                     HorizontalPosition="@NotificationHorizontalPosition.Center"
+                     VerticalPosition="@NotificationVerticalPosition.Top" />
+
+@if (ShowSubmitBanner)
+{
+    <div class="surface-card mb-4 d-flex align-items-center gap-3" style="background-color:#ecfdf3;border-color:#6ee7b7;border-width:2px;">
+        <span class="badge-soft badge-soft-success" style="font-size:0.9rem;padding:0.5rem 0.9rem;">&#10003; Submitted</span>
+        <div>
+            <strong>Timesheet submitted for approval.</strong>
+            <div class="text-muted" style="font-size:0.85rem;">Your approver will review it shortly. You'll see the status update above once it's approved.</div>
+        </div>
+    </div>
+}
 
 <div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
     <div>
@@ -135,11 +150,30 @@ else
     private DateTime? WeekStart { get; set; } = StartOfWeek(DateTime.Today);
     private TimesheetWeek? CurrentTimesheet { get; set; }
     private TelerikNotification? NotificationRef { get; set; }
+    private bool ShowSubmitBanner { get; set; }
     private List<DateTime> WeekDays { get; set; } = [];
     private List<TimesheetRow> Rows { get; set; } = [];
     private decimal WeekTotal => Rows.Sum(r => r.Total);
 
-    protected override void OnInitialized() => LoadWeek();
+    protected override void OnInitialized()
+    {
+        AuthProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+        LoadWeek();
+    }
+
+    private async void OnAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        await InvokeAsync(() =>
+        {
+            LoadWeek();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        AuthProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+    }
 
     private static DateTime StartOfWeek(DateTime date)
     {
@@ -151,6 +185,7 @@ else
     {
         TimesheetStatus.Approved => "badge-soft-success",
         TimesheetStatus.Rejected => "badge-soft-danger",
+        TimesheetStatus.FirstStageApproved => "badge-soft-blue",
         TimesheetStatus.Submitted or TimesheetStatus.ReadyToSubmit => "badge-soft-blue",
         _ => "badge-soft-neutral"
     };
@@ -166,6 +201,7 @@ else
 
     private void LoadWeek()
     {
+        ShowSubmitBanner = false;
         var user = AuthProvider.CurrentUser;
         if (user is null || WeekStart is null)
         {
@@ -257,6 +293,7 @@ else
     {
         SyncEntriesFromRows();
         CurrentTimesheet!.Status = TimesheetStatus.Draft;
+        Store.SaveTimesheets();
         NotificationRef?.Show(new NotificationModel
         {
             Text = "Draft saved.",
@@ -277,11 +314,14 @@ else
         }
 
         SyncEntriesFromRows();
-        CurrentTimesheet!.Status = TimesheetStatus.ReadyToSubmit;
+        CurrentTimesheet!.Status = TimesheetStatus.Submitted;
+        Store.SaveTimesheets();
+        ShowSubmitBanner = true;
         NotificationRef?.Show(new NotificationModel
         {
-            Text = "Timesheet marked as Ready to Submit.",
-            ThemeColor = ThemeConstants.Notification.ThemeColor.Success
+            Text = "\u2705 Timesheet submitted for approval!",
+            ThemeColor = ThemeConstants.Notification.ThemeColor.Success,
+            CloseAfter = 6000
         });
     }
 

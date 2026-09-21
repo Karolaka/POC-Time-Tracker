@@ -329,3 +329,56 @@ h1:focus {
 .k-grid .k-table-row:hover .k-table-td {
     background-color: #f9fafb !important;
 }
+
+/* ==========================================================================
+   Approve / Reject action buttons — Approvals grid
+   ========================================================================== */
+.btn-approve.k-button,
+.btn-reject.k-button {
+    height: 36px;
+    min-height: 36px;
+    border-radius: 8px !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0 0.9rem;
+}
+
+.btn-approve.k-button {
+    background-color: var(--app-color-accent) !important;
+    border-color: var(--app-color-accent) !important;
+    color: #ffffff !important;
+}
+
+    .btn-approve.k-button:hover {
+        background-color: var(--app-color-accent-hover) !important;
+        border-color: var(--app-color-accent-hover) !important;
+    }
+
+.btn-reject.k-button {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: var(--app-color-text-secondary) !important;
+}
+
+    .btn-reject.k-button:hover {
+        background-color: #f3f4f6 !important;
+        color: var(--app-color-text) !important;
+    }
+
+/* ==========================================================================
+   Prominent toast notifications (submit confirmations, etc.)
+   ========================================================================== */
+.app-notification .k-notification {
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    padding: 1rem 1.5rem !important;
+    border-radius: var(--app-radius-md) !important;
+    box-shadow: var(--app-shadow-lg) !important;
+    min-width: 320px;
+}
+
+.app-notification .k-notification-success {
+    background-color: #ecfdf3 !important;
+    color: #027a48 !important;
+    border: 1px solid #6ee7b7 !important;
+}

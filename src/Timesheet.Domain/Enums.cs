@@ -32,7 +32,9 @@ public enum RoleType
     /// <summary>Full administration: users, roles, projects, tasks, calendars, absence codes.</summary>
     Administrator,
     /// <summary>Read-only visibility across the whole program (e.g. PMO / finance).</summary>
-    ProgramViewer
+    ProgramViewer,
+    /// <summary>Second-stage / final sign-off approver over timesheets already approved by a first-stage program approver.</summary>
+    FinalApprover
 }
 
 public enum TimesheetStatus
@@ -40,6 +42,8 @@ public enum TimesheetStatus
     Draft,
     ReadyToSubmit,
     Submitted,
+    /// <summary>Approved by the first-stage (program/org) approver; awaiting final super-admin sign-off.</summary>
+    FirstStageApproved,
     Approved,
     Rejected
 }
