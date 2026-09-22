@@ -15,7 +15,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<FakeAuthenticationStateProvider>();
 builder.Services.AddSingleton<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider>(
     sp => sp.GetRequiredService<FakeAuthenticationStateProvider>());
-builder.Services.AddSingleton<InMemoryTimesheetStore>();
+builder.Services.AddSingleton(sp =>
+    new InMemoryTimesheetStore(Path.Combine(builder.Environment.ContentRootPath, "seed-timesheets.json")));
 
 var app = builder.Build();
 

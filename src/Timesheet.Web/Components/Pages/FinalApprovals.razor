@@ -9,13 +9,51 @@
     <p class="page-subtitle">Second-stage sign-off across all organizations for timesheets already approved by a first-stage program approver.</p>
 </div>
 
+<div class="kpi-row">
+    <div class="kpi-card">
+        <span class="kpi-label">Pending Final Approval</span>
+        <span class="kpi-value">@PendingFinalApproval.Count</span>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Hours Pending Final Approval</span>
+        <span class="kpi-value">@PendingHours.ToString("0.##")<span class="kpi-meta"> h</span></span>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Total Program Hours Logged</span>
+        <span class="kpi-value">@TotalProgramHours.ToString("0.##")<span class="kpi-meta"> h</span></span>
+        <span class="kpi-meta">Across all users, all statuses</span>
+    </div>
+</div>
+
 <div class="surface-card" style="padding:0;">
 <TelerikGrid Data="@PendingFinalApproval" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
     <GridColumns>
         <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px" />
-        <GridColumn Field="@nameof(TimesheetWeek.UserId)" Title="User" />
+        <GridColumn Title="User" Width="160px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                @Store.GetUserDisplayName(ts.UserId)
+            </Template>
+        </GridColumn>
         <GridColumn Field="@nameof(TimesheetWeek.WeekStarting)" Title="Week" Width="130px" />
-        <GridColumn Field="@nameof(TimesheetWeek.ApprovedByUserId)" Title="First-Stage Approver" Width="180px" />
+        <GridColumn Title="Project Hours" MinResizableWidth="220">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                <span style="font-size:0.85rem;">@Store.GetProjectHoursBreakdown(ts)</span>
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Total Hours" Width="120px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                <strong>@InMemoryTimesheetStore.GetTotalHours(ts).ToString("0.##")</strong>
+            </Template>
+        </GridColumn>
+        <GridColumn Title="First-Stage Approver" Width="180px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                @Store.GetUserDisplayName(ts.ApprovedByUserId)
+            </Template>
+        </GridColumn>
         <GridColumn Field="@nameof(TimesheetWeek.Status)" Title="Status" Width="150px">
             <Template>
                 @{ var ts = (TimesheetWeek)context; }
@@ -32,6 +70,8 @@
 
 @code {
     private List<TimesheetWeek> PendingFinalApproval { get; set; } = [];
+    private decimal PendingHours => PendingFinalApproval.Sum(InMemoryTimesheetStore.GetTotalHours);
+    private decimal TotalProgramHours => Store.Timesheets.Sum(InMemoryTimesheetStore.GetTotalHours);
 
     protected override void OnInitialized()
     {

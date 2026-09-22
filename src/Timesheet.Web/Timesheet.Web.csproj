@@ -9,6 +9,12 @@
     <PackageReference Include="Telerik.UI.for.Blazor" Version="15.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="seed-timesheets.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

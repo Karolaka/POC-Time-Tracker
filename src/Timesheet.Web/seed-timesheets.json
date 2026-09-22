@@ -1,0 +1,26 @@
+{
+  "//": "Seed data for initial submitted timesheets awaiting approval. This file is only used the FIRST time the app runs (no persisted state file yet in %TEMP%\\Timesheet.Web\\timesheets.json). After that, all changes (new submissions, approvals, rejections) are saved to that runtime file, not here. Edit this file to change what shows up on a completely fresh run/clean temp folder.",
+  "timesheets": [
+    {
+      "id": "ts1",
+      "userId": "u1",
+      "organization": "Jacobs",
+      "weekOffset": 0,
+      "status": "Submitted",
+      "entries": [
+        { "dayOffset": 0, "type": "Work", "projectId": "p1", "taskId": "t1", "hours": 8, "workArrangement": "InPerson", "clientLocation": "ClientOffice" }
+      ]
+    },
+    {
+      "id": "ts2",
+      "userId": "u2",
+      "organization": "Rumble",
+      "weekOffset": 0,
+      "status": "Submitted",
+      "entries": [
+        { "dayOffset": 0, "type": "Work", "projectId": "p2", "taskId": "t3", "hours": 8, "workArrangement": "InPerson", "clientLocation": "ClientOffice" },
+        { "dayOffset": 1, "type": "Work", "projectId": "p2", "taskId": "t3", "hours": 8, "workArrangement": "InPerson", "clientLocation": "ClientOffice" }
+      ]
+    }
+  ]
+}

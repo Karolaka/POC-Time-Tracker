@@ -7,12 +7,40 @@
     <p class="page-subtitle">Read-only visibility across the whole program.</p>
 </div>
 
+<div class="kpi-row">
+    <div class="kpi-card">
+        <span class="kpi-label">Total Timesheets</span>
+        <span class="kpi-value">@Store.Timesheets.Count</span>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Total Hours Logged (All Users)</span>
+        <span class="kpi-value">@TotalProgramHours.ToString("0.##")<span class="kpi-meta"> h</span></span>
+    </div>
+</div>
+
 <div class="surface-card" style="padding:0;">
 <TelerikGrid Data="@Store.Timesheets" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
     <GridColumns>
         <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px" />
-        <GridColumn Field="@nameof(TimesheetWeek.UserId)" Title="User" />
+        <GridColumn Title="User" Width="160px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                @Store.GetUserDisplayName(ts.UserId)
+            </Template>
+        </GridColumn>
         <GridColumn Field="@nameof(TimesheetWeek.WeekStarting)" Title="Week" Width="130px" />
+        <GridColumn Title="Project Hours" MinResizableWidth="220">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                <span style="font-size:0.85rem;">@Store.GetProjectHoursBreakdown(ts)</span>
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Total Hours" Width="120px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                <strong>@InMemoryTimesheetStore.GetTotalHours(ts).ToString("0.##")</strong>
+            </Template>
+        </GridColumn>
         <GridColumn Field="@nameof(TimesheetWeek.Status)" Title="Status" Width="130px">
             <Template>
                 @{ var ts = (TimesheetWeek)context; }
@@ -22,3 +50,7 @@
     </GridColumns>
 </TelerikGrid>
 </div>
+
+@code {
+    private decimal TotalProgramHours => Store.Timesheets.Sum(InMemoryTimesheetStore.GetTotalHours);
+}
