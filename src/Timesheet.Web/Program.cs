@@ -12,8 +12,8 @@ builder.Services.AddTelerikBlazor();
 
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddSingleton<FakeAuthenticationStateProvider>();
-builder.Services.AddSingleton<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider>(
+builder.Services.AddScoped<FakeAuthenticationStateProvider>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider>(
     sp => sp.GetRequiredService<FakeAuthenticationStateProvider>());
 builder.Services.AddSingleton(sp =>
     new InMemoryTimesheetStore(Path.Combine(builder.Environment.ContentRootPath, "seed-timesheets.json")));

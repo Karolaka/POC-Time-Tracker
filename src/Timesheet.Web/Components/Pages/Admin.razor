@@ -12,8 +12,22 @@
 <TelerikGrid Data="@Store.Users" Pageable="true">
     <GridColumns>
         <GridColumn Field="@nameof(AppUser.DisplayName)" Title="Name" />
-        <GridColumn Field="@nameof(AppUser.Organization)" Title="Organization" />
-        <GridColumn Field="@nameof(AppUser.Roles)" Title="Roles" />
+        <GridColumn Field="@nameof(AppUser.Organization)" Title="Organization">
+            <Template>
+                @{
+                    var user = (AppUser)context;
+                }
+                <span class="badge-soft @UiHelpers.GetOrgBadgeClass(user.Organization)">@user.Organization</span>
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Roles">
+            <Template>
+                @{
+                    var user = (AppUser)context;
+                }
+                @string.Join(", ", user.Roles)
+            </Template>
+        </GridColumn>
     </GridColumns>
 </TelerikGrid>
 </div>

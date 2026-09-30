@@ -1,7 +1,181 @@
 ﻿@page "/"
+@implements IDisposable
+@inject InMemoryTimesheetStore Store
+@inject FakeAuthenticationStateProvider AuthProvider
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="page-header">
+    <h3>Dashboard</h3>
+    <p class="page-subtitle">@(CurrentUser is not null ? "Quick summary for your role(s)." : "Sign in as a user to see your dashboard.")</p>
+</div>
 
-Welcome to your new app.
+@if (CurrentUser is null)
+{
+    <div class="surface-card text-center">
+        <p class="mb-0 text-muted">Please sign in as a user to view your dashboard.</p>
+    </div>
+}
+else
+{
+    <div class="role-dashboard-grid">
+        @if (CurrentUser.Roles.Contains(RoleType.TimeEntry))
+        {
+            <div class="role-dashboard-card role-timeentry">
+                <h5>My Timesheet</h5>
+                <div class="role-dashboard-stats">
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@MyCurrentWeekHours.ToString("0.##")<span style="font-size:0.9rem;"> h</span></span>
+                        <span class="role-dashboard-stat-label">This week logged</span>
+                    </div>
+                    <div class="role-dashboard-stat">
+                        <span class="badge-soft @GetStatusBadgeClass(MyCurrentWeekStatus)">@(MyCurrentWeekStatus?.ToString() ?? "No entry")</span>
+                        <span class="role-dashboard-stat-label">Status</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (CurrentUser.Roles.Contains(RoleType.Approver))
+        {
+            <div class="role-dashboard-card role-approver">
+                <h5>Approvals</h5>
+                <div class="role-dashboard-stats">
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@PendingApprovalsCount</span>
+                        <span class="role-dashboard-stat-label">Pending timesheets</span>
+                    </div>
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@PendingApprovalsHours.ToString("0.##")<span style="font-size:0.9rem;"> h</span></span>
+                        <span class="role-dashboard-stat-label">Hours pending</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (CurrentUser.Roles.Contains(RoleType.FinalApprover))
+        {
+            <div class="role-dashboard-card role-finalapprover">
+                <h5>Final Approvals</h5>
+                <div class="role-dashboard-stats">
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@PendingFinalApprovalsCount</span>
+                        <span class="role-dashboard-stat-label">Awaiting sign-off</span>
+                    </div>
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@PendingFinalApprovalsHours.ToString("0.##")<span style="font-size:0.9rem;"> h</span></span>
+                        <span class="role-dashboard-stat-label">Hours pending</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (CurrentUser.Roles.Contains(RoleType.Administrator))
+        {
+            <div class="role-dashboard-card role-administrator">
+                <h5>Administration</h5>
+                <div class="role-dashboard-stats">
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@Store.Users.Count</span>
+                        <span class="role-dashboard-stat-label">Users</span>
+                    </div>
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@Store.Projects.Count</span>
+                        <span class="role-dashboard-stat-label">Projects</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (CurrentUser.Roles.Contains(RoleType.ProgramViewer))
+        {
+            <div class="role-dashboard-card role-programviewer">
+                <h5>Program View</h5>
+                <div class="role-dashboard-stats">
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@Store.Timesheets.Count</span>
+                        <span class="role-dashboard-stat-label">Total timesheets</span>
+                    </div>
+                    <div class="role-dashboard-stat">
+                        <span class="role-dashboard-stat-value">@TotalProgramHours.ToString("0.##")<span style="font-size:0.9rem;"> h</span></span>
+                        <span class="role-dashboard-stat-label">Total hours logged</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private AppUser? CurrentUser => AuthProvider.CurrentUser;
+
+    private decimal MyCurrentWeekHours { get; set; }
+    private TimesheetStatus? MyCurrentWeekStatus { get; set; }
+    private int PendingApprovalsCount { get; set; }
+    private decimal PendingApprovalsHours { get; set; }
+    private int PendingFinalApprovalsCount { get; set; }
+    private decimal PendingFinalApprovalsHours { get; set; }
+    private decimal TotalProgramHours => Store.Timesheets.Sum(InMemoryTimesheetStore.GetTotalHours);
+
+    private bool _disposed;
+
+    protected override void OnInitialized()
+    {
+        AuthProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+        RefreshDashboard();
+    }
+
+    private async void OnAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        if (_disposed) return;
+
+        await InvokeAsync(() =>
+        {
+            if (_disposed) return;
+            RefreshDashboard();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        AuthProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+    }
+
+    private void RefreshDashboard()
+    {
+        var user = CurrentUser;
+        if (user is null) return;
+
+        var currentWeekStart = DateOnly.FromDateTime(DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek + 1));
+        var myCurrentTimesheet = Store.Timesheets.FirstOrDefault(t => t.UserId == user.Id && t.WeekStarting == currentWeekStart);
+        MyCurrentWeekHours = myCurrentTimesheet is null ? 0 : InMemoryTimesheetStore.GetTotalHours(myCurrentTimesheet);
+        MyCurrentWeekStatus = myCurrentTimesheet?.Status;
+
+        if (user.Roles.Contains(RoleType.Approver))
+        {
+            var approvable = Store.GetApprovableTimesheets(user).Where(t => t.Status == TimesheetStatus.Submitted).ToList();
+            PendingApprovalsCount = approvable.Count;
+            PendingApprovalsHours = approvable.Sum(InMemoryTimesheetStore.GetTotalHours);
+        }
+
+        if (user.Roles.Contains(RoleType.FinalApprover))
+        {
+            var pendingFinal = Store.GetFinalApprovableTimesheets().ToList();
+            PendingFinalApprovalsCount = pendingFinal.Count;
+            PendingFinalApprovalsHours = pendingFinal.Sum(InMemoryTimesheetStore.GetTotalHours);
+        }
+    }
+
+    private static string GetStatusBadgeClass(TimesheetStatus? status) => status switch
+    {
+        TimesheetStatus.Approved => "badge-soft-success",
+        TimesheetStatus.Rejected => "badge-soft-danger",
+        TimesheetStatus.FirstStageApproved => "badge-soft-blue",
+        TimesheetStatus.Submitted or TimesheetStatus.ReadyToSubmit => "badge-soft-blue",
+        null => "badge-soft-neutral",
+        _ => "badge-soft-neutral"
+    };
+}
+

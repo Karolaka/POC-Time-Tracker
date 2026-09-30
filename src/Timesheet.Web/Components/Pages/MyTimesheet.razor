@@ -73,6 +73,7 @@
                                                  TextField="@nameof(Project.Name)"
                                                  ValueField="@nameof(Project.Id)"
                                                  DefaultText="Select project..."
+                                                 Enabled="@IsEditing"
                                                  Width="100%" />
                         </td>
                         <td>
@@ -81,6 +82,7 @@
                                                  TextField="@nameof(WorkTask.Name)"
                                                  ValueField="@nameof(WorkTask.Id)"
                                                  DefaultText="Select task..."
+                                                 Enabled="@IsEditing"
                                                  Width="100%" />
                         </td>
                         @foreach (var day in WeekDays)
@@ -93,12 +95,13 @@
                                                         Max="24m"
                                                         Step="0.5m"
                                                         Format="0.##"
+                                                        Enabled="@IsEditing"
                                                         Width="80px" />
                             </td>
                         }
                         <td class="text-center"><strong>@row.Total.ToString("0.##")</strong></td>
                         <td class="text-center">
-                            <TelerikButton OnClick="@(() => RemoveRow(row))" Title="Remove row">Remove</TelerikButton>
+                            <TelerikButton OnClick="@(() => RemoveRow(row))" Enabled="@IsEditing" Title="Remove row">Remove</TelerikButton>
                         </td>
                     </tr>
                 }
@@ -121,11 +124,19 @@
     </div>
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <TelerikButton OnClick="@AddRow">Add Row</TelerikButton>
+        <TelerikButton OnClick="@AddRow" Enabled="@IsEditing">Add Row</TelerikButton>
 
         <div class="d-flex gap-2">
-            <TelerikButton OnClick="@SaveDraft">Save Draft</TelerikButton>
-            <TelerikButton OnClick="@SubmitTimesheet" ThemeColor="primary" Enabled="@(WeekTotal == RequiredWeeklyHours)">Submit</TelerikButton>
+            @if (IsEditing)
+            {
+                <TelerikButton OnClick="@ClearWeek" FillMode="flat">Clear</TelerikButton>
+                <TelerikButton OnClick="@SaveDraft">Save Draft</TelerikButton>
+                <TelerikButton OnClick="@SubmitTimesheet" ThemeColor="primary" Enabled="@(WeekTotal == RequiredWeeklyHours)">Submit</TelerikButton>
+            }
+            else
+            {
+                <TelerikButton OnClick="@EnableEditing" ThemeColor="primary">Edit</TelerikButton>
+            }
         </div>
     </div>
 
@@ -151,9 +162,12 @@ else
     private TimesheetWeek? CurrentTimesheet { get; set; }
     private TelerikNotification? NotificationRef { get; set; }
     private bool ShowSubmitBanner { get; set; }
+    private bool IsEditing { get; set; } = true;
     private List<DateTime> WeekDays { get; set; } = [];
     private List<TimesheetRow> Rows { get; set; } = [];
     private decimal WeekTotal => Rows.Sum(r => r.Total);
+
+    private bool _disposed;
 
     protected override void OnInitialized()
     {
@@ -163,8 +177,11 @@ else
 
     private async void OnAuthenticationStateChanged(Task<AuthenticationState> task)
     {
+        if (_disposed) return;
+
         await InvokeAsync(() =>
         {
+            if (_disposed) return;
             LoadWeek();
             StateHasChanged();
         });
@@ -172,6 +189,7 @@ else
 
     public void Dispose()
     {
+        _disposed = true;
         AuthProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
     }
 
@@ -229,7 +247,19 @@ else
             Store.Timesheets.Add(CurrentTimesheet);
         }
 
+        IsEditing = CurrentTimesheet.Status == TimesheetStatus.Draft;
+
         BuildRowsFromEntries();
+    }
+
+    /// <summary>Unlocks a previously submitted/approved timesheet so its hours can be edited again.</summary>
+    private void EnableEditing() => IsEditing = true;
+
+    /// <summary>Resets the current week back to a single empty row, clearing all entered hours.</summary>
+    private void ClearWeek()
+    {
+        Rows = [new TimesheetRow()];
+        RecalculateTotals();
     }
 
     private void BuildRowsFromEntries()
@@ -317,6 +347,7 @@ else
         CurrentTimesheet!.Status = TimesheetStatus.Submitted;
         Store.SaveTimesheets();
         ShowSubmitBanner = true;
+        IsEditing = false;
         NotificationRef?.Show(new NotificationModel
         {
             Text = "\u2705 Timesheet submitted for approval!",

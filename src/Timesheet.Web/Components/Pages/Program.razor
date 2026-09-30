@@ -21,7 +21,12 @@
 <div class="surface-card" style="padding:0;">
 <TelerikGrid Data="@Store.Timesheets" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
     <GridColumns>
-        <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px" />
+        <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px">
+            <Template>
+                @{ var ts = (TimesheetWeek)context; }
+                <span class="badge-soft @UiHelpers.GetOrgBadgeClass(ts.Organization)">@ts.Organization</span>
+            </Template>
+        </GridColumn>
         <GridColumn Title="User" Width="160px">
             <Template>
                 @{ var ts = (TimesheetWeek)context; }

@@ -33,15 +33,16 @@
 }
 else
 {
-    <TelerikPanelBar Class="program-panelbar">
-        <PanelBarItems>
-            @foreach (var group in ProgramGroups)
-            {
-                <PanelBarItem Expanded="true">
-                    <HeaderTemplate>
+    <div class="program-panelbar">
+        @foreach (var group in ProgramGroups)
+        {
+            <div class="k-panelbar-item @UiHelpers.GetOrgAccentClass(group.Organization)">
+                <div class="k-panelbar-header">
+                    <div class="k-link">
                         <div class="program-header">
                             <div class="program-header-title">
                                 <span class="program-name">Program: @group.ProgramName</span>
+                                <span class="badge-soft @UiHelpers.GetOrgBadgeClass(group.Organization)">@group.Organization</span>
                             </div>
                             <div class="program-header-stats">
                                 <div class="program-stat">
@@ -54,46 +55,46 @@ else
                                 </div>
                             </div>
                         </div>
-                    </HeaderTemplate>
-                    <Content>
-                        @foreach (var ts in group.Timesheets)
-                        {
-                            <div class="timesheet-card">
-                                <div class="timesheet-card-info">
-                                    <span class="timesheet-card-user">@Store.GetUserDisplayName(ts.UserId)</span>
-                                    <span class="timesheet-card-meta">Week: @ts.WeekStarting.ToString("MM/dd/yyyy")</span>
-                                    <span class="timesheet-card-meta">Approver: @Store.GetUserDisplayName(ts.ApprovedByUserId)</span>
-                                    <span class="timesheet-card-meta">
-                                        <span class="badge-soft badge-soft-blue">@ts.Status</span>
-                                    </span>
-                                </div>
-                                <div class="timesheet-card-projects">
-                                    <span class="timesheet-card-projects-title">Projects</span>
-                                    @foreach (var line in Store.GetProjectHoursLines(ts))
-                                    {
-                                        <div class="project-line">
-                                            <span class="project-line-name">&bull; @line.ProjectName</span>
-                                            <span class="project-line-hours">@line.Hours.ToString("0.##")h</span>
-                                        </div>
-                                    }
-                                </div>
-                                <div class="timesheet-card-actions">
-                                    <div class="timesheet-card-total">
-                                        <div class="total-value">@InMemoryTimesheetStore.GetTotalHours(ts).ToString("0.##")h</div>
-                                        <div class="total-label">Total Hours</div>
+                    </div>
+                </div>
+                <div class="k-panelbar-content">
+                    @foreach (var ts in group.Timesheets)
+                    {
+                        <div class="timesheet-card">
+                            <div class="timesheet-card-info">
+                                <span class="timesheet-card-user">@Store.GetUserDisplayName(ts.UserId)</span>
+                                <span class="timesheet-card-meta">Week: @ts.WeekStarting.ToString("MM/dd/yyyy")</span>
+                                <span class="timesheet-card-meta">Approver: @Store.GetUserDisplayName(ts.ApprovedByUserId)</span>
+                                <span class="timesheet-card-meta">
+                                    <span class="badge-soft badge-soft-blue">@ts.Status</span>
+                                </span>
+                            </div>
+                            <div class="timesheet-card-projects">
+                                <span class="timesheet-card-projects-title">Projects</span>
+                                @foreach (var line in Store.GetProjectHoursLines(ts))
+                                {
+                                    <div class="project-line">
+                                        <span class="project-line-name">&bull; @line.ProjectName</span>
+                                        <span class="project-line-hours">@line.Hours.ToString("0.##")h</span>
                                     </div>
-                                    <div class="timesheet-card-buttons">
-                                        <TelerikButton OnClick="@(() => FinalApprove(ts))" ThemeColor="primary" Class="btn-approve">Approve</TelerikButton>
-                                        <TelerikButton OnClick="@(() => Reject(ts))" FillMode="flat" Class="btn-reject">Reject</TelerikButton>
-                                    </div>
+                                }
+                            </div>
+                            <div class="timesheet-card-actions">
+                                <div class="timesheet-card-total">
+                                    <div class="total-value">@InMemoryTimesheetStore.GetTotalHours(ts).ToString("0.##")h</div>
+                                    <div class="total-label">Total Hours</div>
+                                </div>
+                                <div class="timesheet-card-buttons">
+                                    <TelerikButton OnClick="@(() => FinalApprove(ts))" ThemeColor="primary" Class="btn-approve">Approve</TelerikButton>
+                                    <TelerikButton OnClick="@(() => Reject(ts))" FillMode="flat" Class="btn-reject">Reject</TelerikButton>
                                 </div>
                             </div>
-                        }
-                    </Content>
-                </PanelBarItem>
-            }
-        </PanelBarItems>
-    </TelerikPanelBar>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 }
 
 @code {
