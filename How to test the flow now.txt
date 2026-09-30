@@ -1,0 +1,24 @@
+How to test the flow now
+1.	Sign in as Alice Jacobs (u1), go to My Timesheet, fill 40h, Submit.
+2.	Switch to Erin AECOM (Program Approver) (u5) — she has Jacobs in her ApproverScope — go to Approvals, and the submitted timesheet will now appear.
+3.	Approve/Reject it — status persists to the JSON file immediately.
+4.	You can also open %TEMP%\Timesheet.Web\timesheets.json directly and hand-edit entries/status while the app is stopped, then restart to load your edits.
+Note: since the store is a singleton and the JSON file is written per save, concurrent edits while the app is running won't auto-reload — restart the app to pick up manual file edits.
+
+
+==
+New Rumble approver
+•	Added u6 — Frank Rumble (Program Approver) with ApproverScope = [Rumble]. Sign in as Frank to see/approve Rumble timesheets in Approvals.
+2. Two-stage approval workflow
+•	New status TimesheetStatus.FirstStageApproved — set when a program approver (Alice/Erin/Frank) approves in Approvals.razor.
+•	New role RoleType.FinalApprover and new user u7 — Grace SuperAdmin (Final Approver).
+•	New page /final-approvals (FinalApprovals.razor), visible only to FinalApprover role, showing all FirstStageApproved timesheets across every org (via Store.GetFinalApprovableTimesheets()), with Final Approve (→ Approved) and Reject actions.
+•	TimesheetWeek now tracks both ApprovedByUserId (first-stage) and FinalApprovedByUserId (second-stage).
+•	New nav link "Final Approvals" added for the FinalApprover role.
+3. More visible submit notification
+•	TelerikNotification repositioned top-center, styled larger/bolder via new .app-notification CSS, with a 6s display duration and a ✅ emoji.
+•	Added a persistent green success banner on the My Timesheet page after submitting, which stays visible until you change weeks — reinforcing that submission succeeded and explaining next steps.
+Suggested test flow
+1.	Sign in as Bob Rumble, submit a timesheet.
+2.	Sign in as Frank Rumble (Program Approver) → Approvals → Approve (status → FirstStageApproved).
+3.	Sign in as Grace SuperAdmin (Final Approver) → Final Approvals → Final Approve (status → Approved).
