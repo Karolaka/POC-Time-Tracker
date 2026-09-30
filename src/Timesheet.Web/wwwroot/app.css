@@ -143,6 +143,7 @@ a, .btn-link {
 }
 
 .kpi-card {
+    position: relative;
     background-color: var(--app-color-surface);
     border: 1px solid var(--app-color-border);
     border-radius: var(--app-radius-lg);
@@ -151,11 +152,38 @@ a, .btn-link {
     display: flex;
     flex-direction: column;
     gap: var(--app-space-2);
+    overflow: hidden;
     transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
+    .kpi-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--app-color-accent), #8b5cf6);
+    }
+
     .kpi-card:hover {
         box-shadow: var(--app-shadow-md);
+    }
+
+    .kpi-card:nth-child(4n+1)::before {
+        background: linear-gradient(90deg, #6366f1, #a855f7);
+    }
+
+    .kpi-card:nth-child(4n+2)::before {
+        background: linear-gradient(90deg, #06b6d4, #22c55e);
+    }
+
+    .kpi-card:nth-child(4n+3)::before {
+        background: linear-gradient(90deg, #f59e0b, #ef4444);
+    }
+
+    .kpi-card:nth-child(4n+4)::before {
+        background: linear-gradient(90deg, #ec4899, #8b5cf6);
     }
 
 .kpi-label {
@@ -594,6 +622,44 @@ h1:focus {
         width: 100%;
     }
 
+/* Modern, minimal Approve/Reject buttons: soft filled success + quiet outline error,
+   rounded pill shape, no heavy shadows. */
+.btn-approve-modern.k-button {
+    border-radius: 999px !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding-block: 0.5rem !important;
+    border: none !important;
+    background-color: #16a34a !important;
+    box-shadow: none !important;
+    transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+    .btn-approve-modern.k-button:hover {
+        background-color: #15803d !important;
+    }
+
+    .btn-approve-modern.k-button:active {
+        transform: translateY(0.5px);
+    }
+
+.btn-reject-modern.k-button {
+    border-radius: 999px !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding-block: 0.5rem !important;
+    border: 1px solid #fecaca !important;
+    background-color: transparent !important;
+    color: #b42318 !important;
+    box-shadow: none !important;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+    .btn-reject-modern.k-button:hover {
+        background-color: #fef3f2 !important;
+        border-color: #fca5a5 !important;
+    }
+
 @media (max-width: 991.98px) {
     .timesheet-card {
         grid-template-columns: 1fr;
@@ -642,22 +708,18 @@ h1:focus {
     color: #a16207;
 }
 
-.org-accent-jacobs .k-panelbar-header,
 .org-accent-jacobs.k-panelbar-item {
     border-left: 4px solid #a5b4fc !important;
 }
 
-.org-accent-rumble .k-panelbar-header,
 .org-accent-rumble.k-panelbar-item {
     border-left: 4px solid #f0abd8 !important;
 }
 
-.org-accent-aecom .k-panelbar-header,
 .org-accent-aecom.k-panelbar-item {
     border-left: 4px solid #a5eaea !important;
 }
 
-.org-accent-metrolink .k-panelbar-header,
 .org-accent-metrolink.k-panelbar-item {
     border-left: 4px solid #fde68a !important;
 }
