@@ -6,7 +6,7 @@
 
 <div class="page-header">
     <h3>Final Approvals</h3>
-    <p class="page-subtitle">Second-stage sign-off across all organizations for timesheets already approved by a first-stage program approver.</p>
+    <p class="page-subtitle">Program-centric second-stage sign-off for timesheets already approved by a first-stage program approver.</p>
 </div>
 
 <div class="kpi-row">
@@ -25,51 +25,80 @@
     </div>
 </div>
 
-<div class="surface-card" style="padding:0;">
-<TelerikGrid Data="@PendingFinalApproval" Pageable="true" Sortable="true" FilterMode="@GridFilterMode.FilterRow">
-    <GridColumns>
-        <GridColumn Field="@nameof(TimesheetWeek.Organization)" Title="Organization" Width="140px" />
-        <GridColumn Title="User" Width="160px">
-            <Template>
-                @{ var ts = (TimesheetWeek)context; }
-                @Store.GetUserDisplayName(ts.UserId)
-            </Template>
-        </GridColumn>
-        <GridColumn Field="@nameof(TimesheetWeek.WeekStarting)" Title="Week" Width="130px" />
-        <GridColumn Title="Project Hours" MinResizableWidth="220">
-            <Template>
-                @{ var ts = (TimesheetWeek)context; }
-                <span style="font-size:0.85rem;">@Store.GetProjectHoursBreakdown(ts)</span>
-            </Template>
-        </GridColumn>
-        <GridColumn Title="Total Hours" Width="120px">
-            <Template>
-                @{ var ts = (TimesheetWeek)context; }
-                <strong>@InMemoryTimesheetStore.GetTotalHours(ts).ToString("0.##")</strong>
-            </Template>
-        </GridColumn>
-        <GridColumn Title="First-Stage Approver" Width="180px">
-            <Template>
-                @{ var ts = (TimesheetWeek)context; }
-                @Store.GetUserDisplayName(ts.ApprovedByUserId)
-            </Template>
-        </GridColumn>
-        <GridColumn Field="@nameof(TimesheetWeek.Status)" Title="Status" Width="150px">
-            <Template>
-                @{ var ts = (TimesheetWeek)context; }
-                <span class="badge-soft badge-soft-blue">@ts.Status</span>
-            </Template>
-        </GridColumn>
-        <GridCommandColumn>
-            <GridCommandButton OnClick="@(() => FinalApprove(context))" ThemeColor="primary" Class="btn-approve">Final Approve</GridCommandButton>
-            <GridCommandButton OnClick="@(() => Reject(context))" FillMode="flat" Class="btn-reject">Reject</GridCommandButton>
-        </GridCommandColumn>
-    </GridColumns>
-</TelerikGrid>
-</div>
+@if (ProgramGroups.Count == 0)
+{
+    <div class="surface-card text-center">
+        <p class="mb-0 text-muted">No timesheets pending final approval right now.</p>
+    </div>
+}
+else
+{
+    <TelerikPanelBar Class="program-panelbar">
+        <PanelBarItems>
+            @foreach (var group in ProgramGroups)
+            {
+                <PanelBarItem Expanded="true">
+                    <HeaderTemplate>
+                        <div class="program-header">
+                            <div class="program-header-title">
+                                <span class="program-name">Program: @group.ProgramName</span>
+                            </div>
+                            <div class="program-header-stats">
+                                <div class="program-stat">
+                                    <span class="program-stat-value">@group.PendingCount</span>
+                                    <span class="program-stat-label">Pending Timesheets</span>
+                                </div>
+                                <div class="program-stat">
+                                    <span class="program-stat-value">@group.PendingHours.ToString("0.##")h</span>
+                                    <span class="program-stat-label">Pending Hours</span>
+                                </div>
+                            </div>
+                        </div>
+                    </HeaderTemplate>
+                    <Content>
+                        @foreach (var ts in group.Timesheets)
+                        {
+                            <div class="timesheet-card">
+                                <div class="timesheet-card-info">
+                                    <span class="timesheet-card-user">@Store.GetUserDisplayName(ts.UserId)</span>
+                                    <span class="timesheet-card-meta">Week: @ts.WeekStarting.ToString("MM/dd/yyyy")</span>
+                                    <span class="timesheet-card-meta">Approver: @Store.GetUserDisplayName(ts.ApprovedByUserId)</span>
+                                    <span class="timesheet-card-meta">
+                                        <span class="badge-soft badge-soft-blue">@ts.Status</span>
+                                    </span>
+                                </div>
+                                <div class="timesheet-card-projects">
+                                    <span class="timesheet-card-projects-title">Projects</span>
+                                    @foreach (var line in Store.GetProjectHoursLines(ts))
+                                    {
+                                        <div class="project-line">
+                                            <span class="project-line-name">&bull; @line.ProjectName</span>
+                                            <span class="project-line-hours">@line.Hours.ToString("0.##")h</span>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="timesheet-card-actions">
+                                    <div class="timesheet-card-total">
+                                        <div class="total-value">@InMemoryTimesheetStore.GetTotalHours(ts).ToString("0.##")h</div>
+                                        <div class="total-label">Total Hours</div>
+                                    </div>
+                                    <div class="timesheet-card-buttons">
+                                        <TelerikButton OnClick="@(() => FinalApprove(ts))" ThemeColor="primary" Class="btn-approve">Approve</TelerikButton>
+                                        <TelerikButton OnClick="@(() => Reject(ts))" FillMode="flat" Class="btn-reject">Reject</TelerikButton>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </Content>
+                </PanelBarItem>
+            }
+        </PanelBarItems>
+    </TelerikPanelBar>
+}
 
 @code {
     private List<TimesheetWeek> PendingFinalApproval { get; set; } = [];
+    private List<ProgramApprovalGroup> ProgramGroups { get; set; } = [];
     private decimal PendingHours => PendingFinalApproval.Sum(InMemoryTimesheetStore.GetTotalHours);
     private decimal TotalProgramHours => Store.Timesheets.Sum(InMemoryTimesheetStore.GetTotalHours);
 
@@ -96,20 +125,19 @@
     private void RefreshQueue()
     {
         PendingFinalApproval = Store.GetFinalApprovableTimesheets().ToList();
+        ProgramGroups = Store.GroupByProgram(PendingFinalApproval);
     }
 
-    private void FinalApprove(object context)
+    private void FinalApprove(TimesheetWeek ts)
     {
-        var ts = (TimesheetWeek)context;
         ts.Status = TimesheetStatus.Approved;
         ts.FinalApprovedByUserId = AuthProvider.CurrentUser?.Id;
         Store.SaveTimesheets();
         RefreshQueue();
     }
 
-    private void Reject(object context)
+    private void Reject(TimesheetWeek ts)
     {
-        var ts = (TimesheetWeek)context;
         ts.Status = TimesheetStatus.Rejected;
         Store.SaveTimesheets();
         RefreshQueue();

@@ -382,3 +382,237 @@ h1:focus {
     color: #027a48 !important;
     border: 1px solid #6ee7b7 !important;
 }
+
+/* ==========================================================================
+   Program-centric approval workspace (PanelBar sections + timesheet cards)
+   ========================================================================== */
+.program-panelbar.k-panelbar {
+    border: none;
+    background: transparent;
+}
+
+.program-panelbar .k-panelbar-item {
+    margin-bottom: var(--app-space-4);
+    border: 1px solid var(--app-color-border) !important;
+    border-radius: var(--app-radius-lg) !important;
+    overflow: hidden;
+    box-shadow: var(--app-shadow-sm);
+    background-color: var(--app-color-surface);
+}
+
+.program-panelbar .k-panelbar-header > .k-link {
+    padding: var(--app-space-4) var(--app-space-5) !important;
+    background-color: var(--app-color-surface) !important;
+}
+
+    .program-panelbar .k-panelbar-header > .k-link:hover {
+        background-color: #f9fafb !important;
+    }
+
+.program-panelbar .k-panelbar-content {
+    padding: var(--app-space-4) var(--app-space-5) var(--app-space-5) !important;
+    background-color: #fbfbfc;
+    border-top: 1px solid var(--app-color-border);
+}
+
+/* Program header row inside the PanelBar item template */
+.program-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: var(--app-space-4);
+    flex-wrap: wrap;
+}
+
+.program-header-title {
+    display: flex;
+    align-items: center;
+    gap: var(--app-space-3);
+}
+
+.program-header-title .program-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--app-color-text);
+}
+
+.program-header-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--app-space-3);
+}
+
+.program-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.2;
+}
+
+.program-stat .program-stat-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--app-color-text);
+}
+
+.program-stat .program-stat-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--app-color-text-muted);
+}
+
+/* Timesheet card: user + week on the left, project breakdown in the middle, actions on the right */
+.timesheet-card {
+    display: grid;
+    grid-template-columns: minmax(200px, 1.1fr) minmax(220px, 1.4fr) minmax(160px, 0.8fr);
+    gap: var(--app-space-5);
+    align-items: stretch;
+    background-color: var(--app-color-surface);
+    border: 1px solid var(--app-color-border);
+    border-radius: var(--app-radius-md);
+    padding: var(--app-space-4) var(--app-space-5);
+    margin-bottom: var(--app-space-3);
+    box-shadow: var(--app-shadow-sm);
+    transition: box-shadow 0.15s ease;
+}
+
+    .timesheet-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .timesheet-card:hover {
+        box-shadow: var(--app-shadow-md);
+    }
+
+.timesheet-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.timesheet-card-user {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--app-color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.timesheet-card-meta {
+    font-size: 0.8rem;
+    color: var(--app-color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.timesheet-card-projects {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-space-2);
+    border-left: 1px solid var(--app-color-border);
+    padding-left: var(--app-space-5);
+    min-width: 0;
+}
+
+.timesheet-card-projects-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--app-color-text-muted);
+    margin-bottom: 0.1rem;
+}
+
+.project-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-space-3);
+    font-size: 0.85rem;
+    padding: 0.2rem 0;
+}
+
+.project-line-name {
+    color: var(--app-color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-line-hours {
+    font-weight: 600;
+    color: var(--app-color-text);
+    white-space: nowrap;
+}
+
+.timesheet-card-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--app-space-3);
+    border-left: 1px solid var(--app-color-border);
+    padding-left: var(--app-space-5);
+}
+
+.timesheet-card-total {
+    text-align: right;
+}
+
+.timesheet-card-total .total-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--app-color-text);
+    line-height: 1.1;
+}
+
+.timesheet-card-total .total-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--app-color-text-muted);
+}
+
+.timesheet-card-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+}
+
+    .timesheet-card-buttons .k-button {
+        width: 100%;
+    }
+
+@media (max-width: 991.98px) {
+    .timesheet-card {
+        grid-template-columns: 1fr;
+    }
+
+    .timesheet-card-projects,
+    .timesheet-card-actions {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid var(--app-color-border);
+        padding-top: var(--app-space-3);
+    }
+
+    .timesheet-card-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .timesheet-card-total {
+        text-align: left;
+    }
+}

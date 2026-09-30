@@ -79,6 +79,41 @@ public class InMemoryTimesheetStore
         return string.Join(", ", groups);
     }
 
+    /// <summary>Structured (non-string) project hour breakdown for a single timesheet, used by card-based
+    /// approval views instead of the comma-separated text summary.</summary>
+    public List<ProjectHoursLine> GetProjectHoursLines(TimesheetWeek timesheet)
+    {
+        return timesheet.Entries
+            .Where(e => e.Type == EntryType.Work)
+            .GroupBy(e => e.ProjectId)
+            .Select(g => new ProjectHoursLine
+            {
+                ProjectName = GetProjectName(g.Key),
+                Hours = g.Sum(e => e.Hours)
+            })
+            .OrderByDescending(l => l.Hours)
+            .ToList();
+    }
+
+    /// <summary>Groups a set of timesheets into a Program (Organization) hierarchy for the approval
+    /// workspace views: Program → one card per user/timesheet → project hour breakdown within each card.</summary>
+    public List<ProgramApprovalGroup> GroupByProgram(IEnumerable<TimesheetWeek> timesheets)
+    {
+        return timesheets
+            .GroupBy(t => t.Organization)
+            .Select(g => new ProgramApprovalGroup
+            {
+                Organization = g.Key,
+                ProgramName = g.Key.ToString(),
+                Timesheets = g
+                    .OrderBy(t => GetUserDisplayName(t.UserId))
+                    .ThenByDescending(t => t.WeekStarting)
+                    .ToList()
+            })
+            .OrderBy(g => g.ProgramName)
+            .ToList();
+    }
+
     /// <summary>Persists the current in-memory Timesheets list to a JSON file so it survives restarts
     /// and can be reviewed/edited manually (e.g. to simulate a different account seeing submitted data).</summary>
     public void SaveTimesheets()
@@ -269,4 +304,23 @@ public class InMemoryTimesheetStore
             ]
         });
     }
+}
+
+/// <summary>One project line within a timesheet card's project-hour breakdown (e.g. "Metrolink Signalling Upgrade — 36h").</summary>
+public class ProjectHoursLine
+{
+    public required string ProjectName { get; init; }
+    public required decimal Hours { get; init; }
+}
+
+/// <summary>One Program (Organization) section in the approval workspace: a header with aggregate
+/// pending counts/hours, containing one timesheet card per user/week underneath.</summary>
+public class ProgramApprovalGroup
+{
+    public required OrganizationCode Organization { get; init; }
+    public required string ProgramName { get; init; }
+    public required List<TimesheetWeek> Timesheets { get; init; }
+
+    public int PendingCount => Timesheets.Count;
+    public decimal PendingHours => Timesheets.Sum(InMemoryTimesheetStore.GetTotalHours);
 }
